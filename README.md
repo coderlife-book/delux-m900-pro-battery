@@ -1,113 +1,108 @@
-# Delux M900 Pro 电量 · MouseBattery
+# MouseBattery
 
-macOS 菜单栏小工具：实时显示 **多彩 Delux M900 Pro**（2.4G 8K 接收器）无线鼠标的电量。
+在 macOS 菜单栏查看 **Delux M900 Pro** 的电量和充电状态。适配 **2.4G 8K 接收器**（`1d57:fa65`）。
 
-macOS 本身对这类走 2.4G dongle 的鼠标拿不到电量（蓝牙鼠标才有系统级电池上报），
-而厂商驱动是 Windows 专用 / 网页版。这个工具直接读接收器 HID 通道里的状态帧。
+[从源码编译](#从源码编译) · [下载预编译版](#下载预编译版)
 
-当前源码界面预览（使用演示电量）
+![菜单栏显示鼠标图标和 81% 电量](screenshots/menubar.png)
 
-![菜单栏](screenshots/menubar.png)
+| 浅色模式 | 深色模式 |
+| :---: | :---: |
+| ![浅色电量浮层](screenshots/card-light.jpg) | ![深色电量浮层](screenshots/card-dark.jpg) |
 
-| 放电中 | 充电中 | 深色模式 |
-|---|---|---|
-| ![放电](screenshots/card-light.jpg) | ![充电](screenshots/card-charging.jpg) | ![深色](screenshots/card-dark.jpg) |
+*截图来自当前源码，电量为演示数据。*
 
-## 下载安装
+## 快速开始
 
-可下载安装面向 **Apple Silicon** 的 v1.0.0。上方界面来自当前源码，请按下方「编译」步骤体验。
+### 从源码编译
 
-[**↓ MouseBattery-1.0.0-arm64.zip**](https://github.com/coderlife-book/delux-m900-pro-battery/releases/latest) · [全部版本](https://github.com/coderlife-book/delux-m900-pro-battery/releases)
+需要 **macOS 13+** 和 Xcode 命令行工具（`xcode-select --install`）。
 
-解压后把 `MouseBattery.app` 拖进 `/Applications`。
+```bash
+git clone https://github.com/coderlife-book/delux-m900-pro-battery
+cd delux-m900-pro-battery
+./build.sh
+open MouseBattery.app
+```
 
-**首次打开请右键 → 打开**：这个 app 是本地 ad-hoc 签名，没有 Apple 开发者签名也没公证，
-双击会被 Gatekeeper 拦下（"无法验证开发者"）。也可以：
+### 下载预编译版
+
+[下载 v1.0.0（Apple Silicon）](https://github.com/coderlife-book/delux-m900-pro-battery/releases/tag/v1.0.0)。解压后将 `MouseBattery.app` 拖入 `/Applications`。该版本使用改造前的界面。Intel Mac 可从源码编译。
+
+<details>
+<summary>首次打开时被 macOS 拦截</summary>
+
+发行包采用临时签名（ad-hoc）。可尝试在访达中右键应用，选择「打开」。如果仍被拦截，对下载的应用执行以下命令后再打开。
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/MouseBattery.app
 open /Applications/MouseBattery.app
 ```
 
-Intel Mac 请走下面的源码编译。
+</details>
 
-## 当前源码功能
+## 使用
 
-- 菜单栏显示系统鼠标图标和电量百分比。
-- 左键打开系统浮层，查看设备连接、电量和状态，再点一次或点别处收起。
-- 在线时显示「刚刚更新」，离线后按分钟更新相对时间。
-- 右键菜单提供刷新电量和退出。
-- 充电或离线时，浮层标注上次已知电量。无可用读数时显示 `—`。
-- 深浅色跟随系统。鼠标关机或离开范围后，连续 15 秒无帧即判为离线。
+- **左键**点击菜单栏图标，查看电量、连接状态和更新时间。再点一次或点击浮层外即可收起。
+- **右键**点击图标，刷新电量或退出应用。
+- 在线时显示「刚刚更新」。连续 15 秒没有状态帧时判为离线，更新时间按分钟更新。
+- **充电或离线**时显示上次已知电量，没有可用读数时显示 `—`。
 
-## 为什么充电时没有实时电量
+<details>
+<summary>充电状态截图</summary>
 
-实测（`0330400351` → 上底座 → 3 秒后 `0330400364`）：一放上充电底座，电量字节就跳到 `0x64`(100)，
-取下后过 2 秒才落回真实值。官方 Compx/Delux 网页驱动对这种情况的处理是"连续读到 8 次 100 才采信"，
-并在有电压字段时改用电压换算。这个接收器的状态帧里没有电压字段，所以充电时只能给出"上次已知电量"，
-这是数据本身的限制，不是解析问题。
+![充电中的浮层显示上次已知电量 58%](screenshots/card-charging.jpg)
 
-官方 Windows 驱动（`DELUX.exe`）也一样：充电时它直接忽略电量字节，改成动画播一个假的 0→100 扫动。
-所以"充电时不要相信这个数字"是厂商自己的行为，不是我们过度保守。
+</details>
 
-## 协议（逆向结果）
+## 工作原理
 
-设备：`1d57:fa65`，product string 为 `2.4G 8K HS Receiver`（LXDDZ），4 个 interface / 8 个 collection。
-有价值的只有 vendor 那个 interface 上的 4 个 report ID：
+应用通过 IOKit **只读**监听接收器广播的 HID 状态帧。其他批次的接收器可能使用不同的 VID/PID 和帧格式。菜单栏应用与命令行工具需要分开运行，同一时刻只有一个进程能读取该通道。
 
-```
-Input   id=0x01   1B  page 0x01     (System Control)
-Input   id=0x02   2B  page 0x0C     (Consumer)
-Input   id=0x03   4B  page 0x0A     ← 电量状态帧，payload 4 字节
-Input   id=0x04  63B  page 0xFF00   (vendor)
-Output  id=0x04  63B  page 0xFF00   (vendor)
-```
+充电时，接收器可能在几秒内从 81% 跳报到 100%（`0330400351` → `0330400364`）。这个占位值不能代表实时电量，状态帧也没有可用于换算的电压字段。官方 Windows 驱动在充电期间显示动画，Compx/Delux 网页驱动会等待连续 8 次读到 100%，并优先用电压字段估算。
 
-- **没有 feature report**：`get_feature_report()` 对 report id 0..255 全部返回 `OSError: read error`
-  （hidapi 把 macOS 的 `kIOReturnUnsupported` 映射成这个空消息异常），descriptor 里也确实一条 feature 都没有。
-- **没有 `0x0B` 那一组 feature collection**：官方 Windows 驱动改 DPI / 灯效 / 回报率靠的是
-  usage page `0x0B` 上的 feature report（`0x04`~`0x22`）。这台接收器没暴露它们 —— 所以 DPI、灯效、回报率
-  在这只鼠标上做不了，这是硬件/固件差异，不是 macOS 限制。想碰只能自己摸 `0xFF00` 那条 63 字节 interrupt OUT。
-- 厂商 collection（usage page `0xFF00`）在 IOKit 里**不是独立的 IOHIDDevice**，它是 System Control
-  那个 device 的 usage pair 之一，要用 `kIOHIDDeviceUsagePairsKey` 找。
-- 两个键盘接口（usage 6）被 macOS 独占，普通权限打不开，属正常现象。
+<details>
+<summary>HID 协议和接收器细节</summary>
 
-接收器每 ~4 秒主动推一帧 5 字节状态包（含 report ID），格式与官方 Windows 驱动一致：
+`2.4G 8K HS Receiver`（LXDDZ）有 4 个接口和 8 个 collection。厂商接口的 report 如下。
 
-```
-03 <model> <event> <state> <level>
-```
+| 方向 | Report ID | Payload | Usage page | 用途 |
+| --- | --- | --- | --- | --- |
+| Input | `0x01` | 1 B | `0x01` | System Control |
+| Input | `0x02` | 2 B | `0x0C` | Consumer |
+| Input | `0x03` | 4 B | `0x0A` | 电量状态帧 |
+| Input | `0x04` | 63 B | `0xFF00` | 厂商通道 |
+| Output | `0x04` | 63 B | `0xFF00` | 厂商通道 |
 
-| 字节 | 值 | 含义 |
-|---|---|---|
-| `buf[0]` | `0x03` | report ID（usage page `0x0A`，payload 4 字节） |
-| `buf[1]` | 型号代码 | 这只鼠标报 `0x30`；官方驱动用同一字节区分型号（如 `0x3d` = M900PRO） |
-| `buf[2]` | 事件码 | `0x40` = 电量；另有 `0x10` DPI、`0x20` 回报率、`0x50` 命令 ACK 等，我们从不改设置所以只看得到 `0x40` |
-| `buf[3]` | 状态 | `1` 放电中 · `2` 已充满 · `3` 充电中（注意这是状态码，不是位图） |
-| `buf[4]` | 0x00–0x64 | 电量百分比，**充电期间不可信** |
+接收器约每 4 秒广播一次 `03 <model> <event> <state> <level>`。共 5 字节，包含 report ID。
 
-状态刚切换的那一帧会先给一个 `0x64` 占位值，约 2 秒后落到真实值；鼠标关机时整条链路静默，一帧都不来。
+| 字节 | 含义 | 值 |
+| --- | --- | --- |
+| `buf[0]` | Report ID | `0x03` |
+| `buf[1]` | 型号 | 本机接收器报 `0x30`，官方驱动也用该字段区分其他型号 |
+| `buf[2]` | 事件 | `0x40` 电量，`0x10` DPI，`0x20` 回报率，`0x50` 命令 ACK |
+| `buf[3]` | 状态码 | `1` 放电，`2` 已充满，`3` 充电中 |
+| `buf[4]` | 电量 | `0x00`–`0x64`，充电期间的读数不可信 |
 
+- 状态切换时首帧可能报 `0x64` 占位值，约 2 秒后恢复。鼠标关机后，接收器停止推送电量状态帧。
+- 厂商 collection 是 System Control 设备的 usage pair。通过 `kIOHIDDeviceUsagePairsKey` 定位。应用只监听该通道，不打开鼠标或指针 collection。
+- 接收器没有 feature report，也没有官方工具用于设置 DPI、灯效和回报率的 `0x0B` 通道。探测 `get_feature_report()` 会返回 IOKit 的 `kIOReturnUnsupported`。
+- 两个键盘接口（usage 6）由 macOS 独占。
 
-## 编译
+协议中型号、事件和状态字段的含义参考了 [omarchy-delux-m900 的逆向记录](https://github.com/AeonArcHQ/omarchy-delux-m900/blob/HEAD/docs/re/findings.md)。该 Linux 项目适配带 feature report 的 `1d57:fa60` 接收器。
 
-```bash
-git clone https://github.com/coderlife-book/delux-m900-pro-battery
-cd delux-m900-pro-battery
-```
+</details>
 
-需要 macOS 13+ 和 Xcode Command Line Tools（`xcode-select --install`）。
+## 进阶
 
-```bash
-./build.sh
-open MouseBattery.app
-```
+<details>
+<summary>开机自启</summary>
 
-## 开机自启
+在源码目录构建应用后执行。
 
 ```bash
 mkdir -p ~/Library/LaunchAgents
-cat > ~/Library/LaunchAgents/local.mousebattery.plist <<EOF
+cat > ~/Library/LaunchAgents/local.mousebattery.plist <<EOF_PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
@@ -116,45 +111,39 @@ cat > ~/Library/LaunchAgents/local.mousebattery.plist <<EOF
   <array><string>$PWD/MouseBattery.app/Contents/MacOS/MouseBattery</string></array>
   <key>RunAtLoad</key><true/>
 </dict></plist>
-EOF
+EOF_PLIST
 launchctl load ~/Library/LaunchAgents/local.mousebattery.plist
 ```
 
-## 命令行版
+</details>
 
-`mouse_battery.py` 是不带界面的等价实现（依赖 `pip install hidapi`），适合脚本/状态栏之外的地方调用：
+<details>
+<summary>命令行工具与调试</summary>
 
-```bash
-python3 mouse_battery.py            # 打印一次：82%  放电中
-python3 mouse_battery.py --watch    # 变化时打印
-python3 mouse_battery.py --json     # {"online":true,"charging":false,"level":82,...}
-```
-
-## 已知限制
-
-- **同一时刻只能有一个进程读这个设备**：hidapi / IOHID 对该 collection 是独占打开，
-  命令行工具和菜单栏 app 同时跑会有一个报 `open failed`。二选一。
-- 只在这一个型号（`1d57:fa65`）上验证过。同系列不同批次可能换 VID/PID 或帧格式；
-  换设备的话改 `MouseBattery.swift` 顶部的 `kVID` / `kPID`，再按上面的表核对字节。
-- 全程**只读**：不向设备写任何字节，也不打开鼠标/指针 collection（不会抢走指针）。
-
-## 调试开关
+退出菜单栏应用后，可用 Python 直接读取设备。
 
 ```bash
-MB_DEBUG=1          ./MouseBattery.app/Contents/MacOS/MouseBattery   # 打印收到的帧
-MB_SHOWCARD=2       ...   # 启动 2 秒后自动展开卡片（截图用）
-MB_APPEARANCE=dark  ...   # 强制深色
-MB_FAKE=charging    ...   # 注入假状态：charging / offline / empty
+python3 -m pip install hidapi
+python3 mouse_battery.py          # 显示一次电量
+python3 mouse_battery.py --watch  # 电量状态变化时输出
+python3 mouse_battery.py --json   # 输出 JSON
 ```
 
-## 相关项目
+从源码目录启动应用时，可设置这些环境变量。
 
-- **[AeonArcHQ/omarchy-delux-m900](https://github.com/AeonArcHQ/omarchy-delux-m900)** — 同一只鼠标
-  （M900 Pro / `MS_15`）在 Linux（Omarchy）上的状态栏插件，还能改 DPI / 灯效 / 回报率。协议是从官方
-  Windows 驱动反汇编出来的，`docs/re/findings.md` 极详细；本文档里"型号码 / 事件码 / 状态码"的语义
-  就是对照它校正的。它面向 `1d57:fa60` 接收器（带 feature report），本仓库是 `1d57:fa65`（8K，
-  无 feature report），所以能力范围不同，不是重复实现。
+| 环境变量 | 效果 |
+| --- | --- |
+| `MB_DEBUG=1` | 打印收到的 HID 帧 |
+| `MB_SHOWCARD=2` | 启动两秒后自动展开浮层 |
+| `MB_APPEARANCE=dark` | 强制深色外观 |
+| `MB_FAKE=charging` | 模拟充电。也可用 `offline` 或 `empty` |
 
-## License
+```bash
+MB_DEBUG=1 ./MouseBattery.app/Contents/MacOS/MouseBattery
+```
+
+</details>
+
+## 许可证
 
 [MIT](LICENSE)
