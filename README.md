@@ -6,9 +6,9 @@
 
 ![菜单栏显示鼠标图标和 81% 电量](screenshots/menubar.png)
 
-| 浅色模式 | 深色模式 |
-| :---: | :---: |
-| ![浅色电量浮层](screenshots/card-light.jpg) | ![深色电量浮层](screenshots/card-dark.jpg) |
+| 浅色模式 | 充电中 | 深色模式 |
+| :---: | :---: | :---: |
+| ![浅色电量浮层](screenshots/card-light.jpg) | ![充电中，显示上次已知电量 58%](screenshots/card-charging.jpg) | ![深色电量浮层](screenshots/card-dark.jpg) |
 
 *截图来自当前源码，电量为演示数据。*
 
@@ -27,7 +27,7 @@ open MouseBattery.app
 
 ### 下载预编译版
 
-[下载 v1.0.0（Apple Silicon）](https://github.com/coderlife-book/delux-m900-pro-battery/releases/tag/v1.0.0)。解压后将 `MouseBattery.app` 拖入 `/Applications`。该版本使用改造前的界面。Intel Mac 可从源码编译。
+[下载 v1.1.0（Apple Silicon，macOS 13+）](https://github.com/coderlife-book/delux-m900-pro-battery/releases/tag/v1.1.0)。解压后将 `MouseBattery.app` 拖入 `/Applications`。Intel Mac 可从源码编译。
 
 <details>
 <summary>首次打开时被 macOS 拦截</summary>
@@ -47,13 +47,6 @@ open /Applications/MouseBattery.app
 - **右键**点击图标，刷新电量或退出应用。
 - 在线时显示「刚刚更新」。连续 15 秒没有状态帧时判为离线，更新时间按分钟更新。
 - **充电或离线**时显示上次已知电量，没有可用读数时显示 `—`。
-
-<details>
-<summary>充电状态截图</summary>
-
-![充电中的浮层显示上次已知电量 58%](screenshots/card-charging.jpg)
-
-</details>
 
 ## 工作原理
 
