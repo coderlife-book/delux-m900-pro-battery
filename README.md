@@ -11,6 +11,24 @@ macOS 本身对这类走 2.4G dongle 的鼠标拿不到电量（蓝牙鼠标才�
 |---|---|---|
 | ![放电](screenshots/card-light.jpg) | ![充电](screenshots/card-charging.jpg) | ![深色](screenshots/card-dark.jpg) |
 
+## 下载安装
+
+不想编译就直接下打包好的（**Apple Silicon，macOS 13+**）：
+
+[**↓ MouseBattery-1.0.0-arm64.zip**](https://github.com/coderlife-book/delux-m900-pro-battery/releases/latest) · [全部版本](https://github.com/coderlife-book/delux-m900-pro-battery/releases)
+
+解压后把 `MouseBattery.app` 拖进 `/Applications`。
+
+**首次打开请右键 → 打开**：这个 app 是本地 ad-hoc 签名，没有 Apple 开发者签名也没公证，
+双击会被 Gatekeeper 拦下（"无法验证开发者"）。也可以：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/MouseBattery.app
+open /Applications/MouseBattery.app
+```
+
+Intel Mac 请走下面的源码编译。
+
 ## 功能
 
 - 菜单栏常驻：鼠标图标 + 百分比，充电时换成闪电图标
