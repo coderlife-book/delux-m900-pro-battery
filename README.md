@@ -1,4 +1,4 @@
-# 鼠标电量 · MouseBattery
+# Delux M900 Pro 电量 · MouseBattery
 
 macOS 菜单栏小工具：实时显示 **多彩 Delux M900 Pro**（2.4G 8K 接收器）无线鼠标的电量。
 
@@ -51,6 +51,11 @@ macOS 本身对这类走 2.4G dongle 的鼠标拿不到电量（蓝牙鼠标才�
 
 ## 编译
 
+```bash
+git clone https://github.com/coderlife-book/delux-m900-pro-battery
+cd delux-m900-pro-battery
+```
+
 需要 macOS + Xcode Command Line Tools（`xcode-select --install`）。
 
 ```bash
@@ -101,3 +106,7 @@ MB_SHOWCARD=2       ...   # 启动 2 秒后自动展开卡片（截图用）
 MB_APPEARANCE=dark  ...   # 强制深色
 MB_FAKE=charging    ...   # 注入假状态：charging / offline / empty
 ```
+
+## License
+
+[MIT](LICENSE)
