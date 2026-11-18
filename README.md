@@ -45,27 +45,47 @@ Intel Mac 请走下面的源码编译。
 并在有电压字段时改用电压换算。这个接收器的状态帧里没有电压字段，所以充电时只能给出"上次已知电量"，
 这是数据本身的限制，不是解析问题。
 
+官方 Windows 驱动（`DELUX.exe`）也一样：充电时它直接忽略电量字节，改成动画播一个假的 0→100 扫动。
+所以"充电时不要相信这个数字"是厂商自己的行为，不是我们过度保守。
+
 ## 协议（逆向结果）
 
 设备：`1d57:fa65`，product string 为 `2.4G 8K HS Receiver`（LXDDZ），4 个 interface / 8 个 collection。
+有价值的只有 vendor 那个 interface 上的 4 个 report ID：
+
+```
+Input   id=0x01   1B  page 0x01     (System Control)
+Input   id=0x02   2B  page 0x0C     (Consumer)
+Input   id=0x03   4B  page 0x0A     ← 电量状态帧，payload 4 字节
+Input   id=0x04  63B  page 0xFF00   (vendor)
+Output  id=0x04  63B  page 0xFF00   (vendor)
+```
 
 - **没有 feature report**：`get_feature_report()` 对 report id 0..255 全部返回 `OSError: read error`
-  （hidapi 把 macOS 的 `kIOReturnUnsupported` 映射成这个空消息异常）。想发命令只能走 interrupt OUT。
+  （hidapi 把 macOS 的 `kIOReturnUnsupported` 映射成这个空消息异常），descriptor 里也确实一条 feature 都没有。
+- **没有 `0x0B` 那一组 feature collection**：官方 Windows 驱动改 DPI / 灯效 / 回报率靠的是
+  usage page `0x0B` 上的 feature report（`0x04`~`0x22`）。这台接收器没暴露它们 —— 所以 DPI、灯效、回报率
+  在这只鼠标上做不了，这是硬件/固件差异，不是 macOS 限制。想碰只能自己摸 `0xFF00` 那条 63 字节 interrupt OUT。
 - 厂商 collection（usage page `0xFF00`）在 IOKit 里**不是独立的 IOHIDDevice**，它是 System Control
   那个 device 的 usage pair 之一，要用 `kIOHIDDeviceUsagePairsKey` 找。
 - 两个键盘接口（usage 6）被 macOS 独占，普通权限打不开，属正常现象。
 
-接收器每 ~4 秒主动推一帧 5 字节状态包（含 report ID）：
+接收器每 ~4 秒主动推一帧 5 字节状态包（含 report ID），格式与官方 Windows 驱动一致：
+
+```
+03 <model> <event> <state> <level>
+```
 
 | 字节 | 值 | 含义 |
 |---|---|---|
-| `buf[0]` | `0x03` | report ID |
-| `buf[1]` | `0x30` | 常量 |
-| `buf[2]` | `0x40` | 常量 |
-| `buf[3]` | flags | bit0 = 鼠标链路在线，bit1 = 充电中 |
-| `buf[4]` | 0x00–0x64 | 电量百分比（充电时为不可信的 100） |
+| `buf[0]` | `0x03` | report ID（usage page `0x0A`，payload 4 字节） |
+| `buf[1]` | 型号代码 | 这只鼠标报 `0x30`；官方驱动用同一字节区分型号（如 `0x3d` = M900PRO） |
+| `buf[2]` | 事件码 | `0x40` = 电量；另有 `0x10` DPI、`0x20` 回报率、`0x50` 命令 ACK 等，我们从不改设置所以只看得到 `0x40` |
+| `buf[3]` | 状态 | `1` 放电中 · `2` 已充满 · `3` 充电中（注意这是状态码，不是位图） |
+| `buf[4]` | 0x00–0x64 | 电量百分比，**充电期间不可信** |
 
 状态刚切换的那一帧会先给一个 `0x64` 占位值，约 2 秒后落到真实值；鼠标关机时整条链路静默，一帧都不来。
+
 
 ## 编译
 
@@ -124,6 +144,14 @@ MB_SHOWCARD=2       ...   # 启动 2 秒后自动展开卡片（截图用）
 MB_APPEARANCE=dark  ...   # 强制深色
 MB_FAKE=charging    ...   # 注入假状态：charging / offline / empty
 ```
+
+## 相关项目
+
+- **[AeonArcHQ/omarchy-delux-m900](https://github.com/AeonArcHQ/omarchy-delux-m900)** — 同一只鼠标
+  （M900 Pro / `MS_15`）在 Linux（Omarchy）上的状态栏插件，还能改 DPI / 灯效 / 回报率。协议是从官方
+  Windows 驱动反汇编出来的，`docs/re/findings.md` 极详细；本文档里"型号码 / 事件码 / 状态码"的语义
+  就是对照它校正的。它面向 `1d57:fa60` 接收器（带 feature report），本仓库是 `1d57:fa65`（8K，
+  无 feature report），所以能力范围不同，不是重复实现。
 
 ## License
 
