@@ -5,6 +5,8 @@ macOS 菜单栏小工具：实时显示 **多彩 Delux M900 Pro**（2.4G 8K 接�
 macOS 本身对这类走 2.4G dongle 的鼠标拿不到电量（蓝牙鼠标才有系统级电池上报），
 而厂商驱动是 Windows 专用 / 网页版。这个工具直接读接收器 HID 通道里的状态帧。
 
+当前源码界面预览（使用演示电量）
+
 ![菜单栏](screenshots/menubar.png)
 
 | 放电中 | 充电中 | 深色模式 |
@@ -13,7 +15,7 @@ macOS 本身对这类走 2.4G dongle 的鼠标拿不到电量（蓝牙鼠标才�
 
 ## 下载安装
 
-不想编译就直接下打包好的（**Apple Silicon，macOS 13+**）：
+可下载安装面向 **Apple Silicon** 的 v1.0.0。上方界面来自当前源码，请按下方「编译」步骤体验。
 
 [**↓ MouseBattery-1.0.0-arm64.zip**](https://github.com/coderlife-book/delux-m900-pro-battery/releases/latest) · [全部版本](https://github.com/coderlife-book/delux-m900-pro-battery/releases)
 
@@ -29,14 +31,14 @@ open /Applications/MouseBattery.app
 
 Intel Mac 请走下面的源码编译。
 
-## 功能
+## 当前源码功能
 
-- 菜单栏常驻：鼠标图标 + 百分比，充电时换成闪电图标
-- 点开是一张卡片：电量、进度条、状态（放电中 / 充电中 / 离线）、最后更新时间
-- `⌘R` 刷新、`⌘Q` 退出、`Esc` 或点别处收起
-- 充电时**不显示 100%**：此时读数被充电电压顶满，是假值，卡片显示"上次已知电量"
-- 鼠标关机/离开范围时静默判离线（15s 无帧），显示上次电量并标注已离线
-- 深浅色自动跟随系统，动效克制（0.14s 展开、悬停 0.12s、按压 0.09s）
+- 菜单栏显示系统鼠标图标和电量百分比。
+- 左键打开系统浮层，查看设备连接、电量和状态，再点一次或点别处收起。
+- 在线时显示「刚刚更新」，离线后按分钟更新相对时间。
+- 右键菜单提供刷新电量和退出。
+- 充电或离线时，浮层标注上次已知电量。无可用读数时显示 `—`。
+- 深浅色跟随系统。鼠标关机或离开范围后，连续 15 秒无帧即判为离线。
 
 ## 为什么充电时没有实时电量
 
@@ -94,7 +96,7 @@ git clone https://github.com/coderlife-book/delux-m900-pro-battery
 cd delux-m900-pro-battery
 ```
 
-需要 macOS + Xcode Command Line Tools（`xcode-select --install`）。
+需要 macOS 13+ 和 Xcode Command Line Tools（`xcode-select --install`）。
 
 ```bash
 ./build.sh

@@ -5,6 +5,7 @@ cd "$(dirname "$0")"
 
 APP="MouseBattery.app"
 swiftc -O -swift-version 5 \
+    -target "$(uname -m)-apple-macosx13.0" \
     -framework Cocoa -framework IOKit \
     -o /tmp/MouseBattery.bin MouseBattery.swift
 
