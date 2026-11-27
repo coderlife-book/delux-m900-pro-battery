@@ -137,6 +137,10 @@ MB_DEBUG=1 ./MouseBattery.app/Contents/MacOS/MouseBattery
 
 </details>
 
+## English
+
+MouseBattery is a macOS menu bar app that shows the battery level and charging state of the Delux M900 Pro wireless mouse, read from its 2.4G 8K receiver (`1d57:fa65`) over a reverse-engineered HID protocol. Read-only: it never writes to the device. While charging, the receiver reports a meaningless 100%, so the app shows the last known level instead. Apple Silicon, macOS 13+. Build from source with `./build.sh`, or grab a prebuilt zip from [Releases](https://github.com/coderlife-book/delux-m900-pro-battery/releases/latest).
+
 ## 许可证
 
 [MIT](LICENSE)
